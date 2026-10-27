@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chamacircles</title>
+<style>
+body{background:#fff8e1;font-family:sans-serif;margin:0;padding:15px;text-align:center}
+.header{background:#ff6f00;color:white;padding:20px;border-radius:15px;margin-bottom:15px}
+.btn{width:90%;max-width:350px;padding:18px;margin:10px;border:none;border-radius:12px;font-size:18px;font-weight:bold;color:white;cursor:pointer;display:block;margin-left:auto;margin-right:auto}
+.orange{background:#ff6f00} .blue{background:#1565c0}
+.card{background:white;padding:15px;border-radius:10px;margin:10px 0;text-align:left;box-shadow:0 2px 5px #ccc}
+input,select{width:95%;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:8px;font-size:16px}
+</style>
+</head>
+<body>
+<div class="header">
+<h1 style="margin:0">Chamacircles</h1>
+<p style="margin:5px 0">Till 4835569</p>
+<small>Ranges 10-20, 21-30... Infinite • 10 Members</small>
+</div>
+
+<button class="btn orange" onclick="loadOccupied()">🟠 Occupied Ranges (5 at a time)</button>
+<button class="btn blue" onclick="loadNew()">🔵 New Ranges 10-20,21-30... Infinite</button>
+
+<div id="content"></div>
+
+<script>
+let pageOcc=0, pageNew=0;
+
+async function loadOccupied(){
+ const r=await fetch('/api/ranges/occupied?page='+pageOcc);
+ const d=await r.json();
+ let html='<h3>Occupied Ranges</h3>';
+ if(d.ranges.length==0) html+='<p>No circles yet. Tap New Ranges to create first!</p>';
+ d.ranges.forEach(c=>{
+   html+=`<div class="card"><b>${c.label}</b> - ${c.members.length}/10 members<br><small>${c.members.map(m=>m.name+'('+m.amount+')').join(', ')}</small></div>`;
+ });
+ if(d.hasMore) html+=`<button class="btn orange" onclick="pageOcc++;loadOccupied()">Next 5 →</button>`;
+ if(pageOcc>0) html+=`<button class="btn blue" onclick="pageOcc--;loadOccupied()">← Prev 5</button>`;
+ document.getElementById('content').innerHTML=html;
+}
+
+async function loadNew(){
+ const r=await fetch('/api/ranges/available?page='+pageNew);
+ const d=await r.json();
+ let html='<h3>New Ranges - Infinite</h3>';
+ d.ranges.forEach(rg=>{
+   html+=`<div class="card"><b>${rg.label}</b><button style="float:right;background:#1565c0;color:white;border:none;padding:8px 15px;border-radius:8px" onclick="showJoin(${rg.low},${rg.high})">Join</button><div style="clear:both"></div></div>`;
+ });
+ html+=`<button class="btn blue" onclick="pageNew++;loadNew()">Next 5 Ranges →</button>`;
+ if(pageNew>0) html+=`<button class="btn orange" onclick="pageNew--;loadNew()">← Prev</button>`;
+ document.getElementById('content').innerHTML=html;
+}
+
+function showJoin(low,high){
+ let opts='';
+ for(let i=low;i<=high;i++) opts+=`<option value="${i}">${i}</option>`;
+ document.getElementById('content').innerHTML=`
+ <div class="card">
+ <h3>Join ${low} to ${high}</h3>
+ <input id="name" placeholder="Your Full Name">
+ <input id="phone" placeholder="Phone 07xxxxxxxx">
+ <label>Choose amount
